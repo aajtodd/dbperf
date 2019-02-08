@@ -36,7 +36,7 @@ func TestWorker(t *testing.T) {
 			Args:  []interface{}{"arg1", "arg2"},
 		}
 
-		mdb.EXPECT().QueryContext(gomock.Any(), query.Query, query.Args...).Return(nil, nil)
+		mdb.EXPECT().ExecContext(gomock.Any(), query.Query, query.Args...).Return(nil, nil)
 
 		results := make(chan result, 1)
 		jobs := make(chan *Query, 1)
@@ -135,7 +135,7 @@ func TestRunTest(t *testing.T) {
 	generator := NewCPUTestGenerator(strings.NewReader(testQueries))
 
 	mdb := mock_dbperf.NewMockQueryable(ctrl)
-	mdb.EXPECT().QueryContext(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil).Times(10)
+	mdb.EXPECT().ExecContext(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil).Times(10)
 
 	c.RunTest(context.Background(), mdb, generator)
 

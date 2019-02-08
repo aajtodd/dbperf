@@ -78,7 +78,7 @@ func (w *worker) run() {
 
 			// execute a single query
 			start := time.Now()
-			_, err := w.db.QueryContext(ctx, q.Query, q.Args...)
+			_, err := w.db.ExecContext(ctx, q.Query, q.Args...)
 			elapsed := time.Since(start)
 
 			// post the results
