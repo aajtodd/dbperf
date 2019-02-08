@@ -1,0 +1,1 @@
+mockgen -package mock_dbperf timescale/dbperf Queryable > mock_queryable.go
