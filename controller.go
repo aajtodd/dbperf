@@ -111,11 +111,12 @@ func NewController(poolSize int) *Controller {
 	}
 
 	return &Controller{
-		poolSize:         poolSize,
-		quit:             make(chan struct{}),
-		workers:          make([]*worker, 0, poolSize),
-		byKey:            make(map[string]*worker),
-		completedQueries: make(chan result, jobQueueSize),
+		poolSize: poolSize,
+		quit:     make(chan struct{}),
+		workers:  make([]*worker, 0, poolSize),
+		byKey:    make(map[string]*worker),
+		// result queue needs to be as large as the number of *possible* outstanding jobs to avoid deadlock
+		completedQueries: make(chan result, jobQueueSize*poolSize),
 	}
 }
 
@@ -223,7 +224,6 @@ outer:
 
 			// FIXME - there is potential here that if the input query's are skewed to a single key we may starve the other workers when this worker's job queue is full
 			//         this is dependent on the input queries generated and how clustered the queries are by a particular key are
-
 			worker.jobs <- q
 
 		case <-ctx.Done():
