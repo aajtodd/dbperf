@@ -154,10 +154,8 @@ func (c *Controller) initPool(db Queryable) {
 }
 
 func (c *Controller) seedWorkers(g QueryGenerator) error {
-	seeded := -1
-
 	// ensure every worker starts off with 1 job or until generator is exhausted
-	for seeded < len(c.workers) {
+	for i := 0; i < c.poolSize; i++ {
 		query, err := g.Next()
 		if err != nil {
 			if err == io.EOF {
@@ -169,10 +167,6 @@ func (c *Controller) seedWorkers(g QueryGenerator) error {
 		// get the correct worker for the job
 		worker := c.getWorker(query)
 		worker.jobs <- query
-
-		if worker.id > seeded {
-			seeded = worker.id
-		}
 	}
 
 	return nil
