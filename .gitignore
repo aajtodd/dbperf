@@ -12,4 +12,4 @@
 *.out
 
 # executable
-dbperf
+/dbperf
