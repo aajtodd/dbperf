@@ -17,9 +17,11 @@ package main
 import (
 	"context"
 	"database/sql"
+	"flag"
 	"fmt"
 	"log"
 	"os"
+	"timescale/dbperf"
 
 	"net/http"
 	_ "net/http/pprof"
@@ -45,7 +47,42 @@ func getenv(key, def string) string {
 	return val
 }
 
+func usage(fs *flag.FlagSet) func() {
+	return func() {
+		fmt.Fprintf(os.Stdout, "usage: dbperf [FLAGS] FILENAME\n\n")
+		fmt.Fprintf(os.Stdout, "Filename may be specified as either an argument or via the -f flag\n\n")
+		fs.PrintDefaults()
+	}
+}
+
 func main() {
+	var cli CliArgs
+	fs := flag.NewFlagSet("dbperf", flag.ExitOnError)
+	fs.Usage = usage(fs)
+	cli.Register(fs)
+
+	if err := fs.Parse(os.Args[1:]); err != nil {
+		fs.Usage()
+		os.Exit(1)
+	}
+
+	args := fs.Args()
+	if cli.filename == "" && len(args) != 1 {
+		fs.Usage()
+		os.Exit(1)
+	}
+
+	filename := cli.filename
+	if filename == "" {
+		filename = args[0]
+	}
+
+	f, err := os.Open(filename)
+	if err != nil {
+		log.Fatalf("open %s: %s\n", filename, err)
+	}
+	defer f.Close()
+
 	log.SetFlags(log.Ldate | log.Lmicroseconds)
 	log.Println("starting dbperf...")
 
@@ -69,4 +106,16 @@ func main() {
 		log.Fatalf("failed to ping database: %s\n", err)
 	}
 	log.Println("database connection good...starting test")
+
+	controller := dbperf.NewController(cli.nworkers)
+	generator := dbperf.NewCPUTestGenerator(f)
+
+	stats, err := controller.RunTest(ctx, db, generator)
+	if err != nil {
+		log.Fatalf("test run failed: %s\n", err)
+	}
+
+	fmt.Printf("%d queries processed after %s\n", stats.Processed, stats.TotalElapsed)
+	fmt.Printf("min: %s; max: %s; avg: %s; median: %s\n", stats.Min, stats.Max, stats.Avg, stats.Median)
+
 }
