@@ -158,7 +158,7 @@ func (c *Controller) seedWorkers(g QueryGenerator) error {
 	for i := 0; i < c.poolSize; i++ {
 		query, err := g.Next()
 		if err != nil {
-			if err == io.EOF {
+			if err == io.EOF && i > 0 {
 				return nil
 			}
 			return err
